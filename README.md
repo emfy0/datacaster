@@ -32,6 +32,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`integer32(error_key = nil)`](#integer32error_key--nil)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
     - [`pattern(regexp, error_key = nil)`](#patternregexp-error_key--nil)
+    - [`uuid(error_key = nil)`](#uuiderror_key--nil)
   - [Special types](#special-types)
     - [`absent(error_key = nil, on: nil)`](#absenterror_key--nil-on-nil)
     - [`any(error_key = nil)`](#anyerror_key--nil)
@@ -540,6 +541,15 @@ I18n keys:
 * not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
 * doesn't satisfy the regexp – `error_key`, `'.pattern'`, `'datacaster.errors.pattern'`
 
+#### `uuid(error_key = nil)`
+
+Returns ValidResult if and only if provided value is a string and UUID. Doesn't transform the value.
+
+I18n keys:
+
+* not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
+* not UUID – `error_key`, `'.uuid'`, `'datacaster.errors.uuid'`
+
 ### Special types
 
 #### `absent(error_key = nil, on: nil)`
@@ -584,6 +594,8 @@ login.("test")
 #### `default(default_value, on: nil)`
 
 Always returns ValidResult.
+
+Returned `default_value` is deeply frozen with [Ractor::make_shareable](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
 
 Returns `default_value` in the following cases:
 
@@ -837,7 +849,11 @@ I18n keys:
 
 #### `transform_to_value(value)`
 
-Always returns ValidResult. The value is transformed to provided argument (disregarding the original value). See also [`default`](#defaultdefault_value-on-nil).
+Always returns ValidResult. The value is transformed to provided argument (disregarding the original value).
+
+Returned value is deeply frozen with [`Ractor::make_shareable`](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
+
+See also [`default`](#defaultdefault_value-on-nil).
 
 ### "Web-form" types
 
@@ -1339,7 +1355,7 @@ CommonValidator =
   end
 
 PersonValidator =
-  Datacaster.schema do
+  Datacaster.partial_schema do
     hash_schema(
       name: string
     )
@@ -1499,7 +1515,33 @@ current_user = ...
 schema.with_context(current_user: current_user).(post_id: 15)
 ```
 
-`context` is an [OpenStruct](https://ruby-doc.org/stdlib-3.1.0/libdoc/ostruct/rdoc/OpenStruct.html) instance.
+`context` behaves similarly to OpenStruct, setter method can be used to set a context value (see also [run](#run--value--) caster):
+
+```ruby
+schema =
+  Datacaster.schema do
+    run { context.five = 5 } & check { context.five == 5 }
+  end
+
+# Notice that #with_context call is still required, otherwise
+# #context method will not be available in the caster's runtime
+schema.with_context.(nil)
+# => Datacaster::ValidResult(nil)
+```
+
+If there are conflicts between context values, the most specific one (closest to the caster) wins:
+
+```ruby
+schema =
+  Datacaster.schema do
+    check { context.five == 5 }.
+      with_context(five: 5). # this will win
+      with_context(five: 10)
+  end
+
+schema.with_context(five: 15).(nil)
+# => Datacaster::ValidResult(nil)
+```
 
 **Note**
 

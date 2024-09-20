@@ -135,6 +135,28 @@ RSpec.describe Datacaster do
         end
 
       expect(caster.(kind: 1, name: '1').to_dry_result).to eq Success(kind: 1, name: '1')
+
+      caster =
+        Datacaster.schema do
+          s = Datacaster.schema { string }
+          switch(:kind).on('person', hash_schema(kind: s))
+        end
+
+      expect(caster.(kind: 'person').to_dry_result).to eq Success(kind: 'person')
+
+      caster =
+        Datacaster.schema do
+          blockchain = hash_schema(a: string)
+          bank = hash_schema(b: string)
+
+          blockchain_or_bank = switch(:kind, blockchain: blockchain, bank: bank)
+
+          blockchain_or_bank & hash_schema(c: string)
+        end
+
+      value = {kind: :blockchain, a: 'asd', c: 'asd'}
+
+      expect(caster.(value).to_dry_result).to eq Success(value)
     end
   end
 end

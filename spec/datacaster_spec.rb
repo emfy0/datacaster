@@ -84,6 +84,11 @@ RSpec.describe Datacaster do
       expect(schema.(1).to_dry_result).to eq Success(1)
       expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
     end
+
+    it "returns deeply frozen default value" do
+      schema = described_class.schema { default([{}], on: :nil?) }
+      expect { schema.(nil).value!.first[:a] = "b" }.to raise_error FrozenError
+    end
   end
 
   describe "included_in typecasting" do
@@ -133,6 +138,26 @@ RSpec.describe Datacaster do
 
     it "returns Failure on empty strings" do
       expect(subject.("").to_dry_result).to eq Failure(["should be non-empty string"])
+    end
+  end
+
+  describe "UUID string typecasting" do
+    subject { described_class.schema { uuid } }
+
+    it "passes UUID strings" do
+      uuid = "58724b11-ff06-485e-bf67-410c96f606d7"
+
+      expect(subject.(uuid).to_dry_result).to eq Success(uuid)
+    end
+
+    it "returns Failure on integers" do
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
+    end
+
+    it "returns Failure on non-UUID strings" do
+      uuid_without_last_symbol = "58724b11-ff06-485e-bf67-410c96f606d"
+
+      expect(subject.(uuid_without_last_symbol).to_dry_result).to eq Failure(["is not UUID"])
     end
   end
 
@@ -1013,10 +1038,24 @@ RSpec.describe Datacaster do
   end
 
   describe "constant mapping" do
-    it "returns exact value" do
-      t = Datacaster.schema { transform_to_value("Test") }
+    let(:transform_to_value_caster) do
+      Datacaster.schema { transform_to_value({ a: { b: { c: ["d"] } } }) }
+    end
 
-      expect(t.(123).to_dry_result).to eq Success("Test")
+    let(:returned_value) do
+      transform_to_value_caster.(123).value!
+    end
+
+    it "returns exact value" do
+      expect(returned_value).to eq({ a: { b: { c: ["d"] } } })
+    end
+
+    it "freezes returned value" do
+      expect(returned_value).to be_frozen
+    end
+
+    it "freezes deeply" do
+      expect { returned_value[:a][:b][:c].pop }.to raise_error FrozenError
     end
   end
 
