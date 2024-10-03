@@ -209,7 +209,33 @@ RSpec.describe Datacaster do
       )
     end
 
-    it "renders schemas with default(...)"
+    it "renders schemas with default(...)" do
+      schema =
+        Datacaster.schema do
+          hash_schema(
+            username: optional(string) & default('Unknown'),
+            email: pattern(/@/).json_schema(description: 'The email of the user')
+          )
+        end
+
+      expect(schema.to_json_schema).to eq(
+        "type" => "object",
+        "properties" => {
+          "username" => {
+            "description" => "The ID of the user",
+            "type" => "integer",
+            "enum" => [1, 2, 3]
+          },
+          "email" => {
+            "description" => "The email of the user",
+            "type" => "string",
+            "pattern" => "/@/"
+          },
+        },
+        "required" => %w(email)
+      )
+    end
+
     it "renders schemas with optional(...)"
   end
 end

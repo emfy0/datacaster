@@ -157,7 +157,7 @@ module Datacaster
         else
           base.(x)
         end
-      end
+      end.json_schema(base.to_json_schema)
     end
 
     def pass
@@ -339,12 +339,6 @@ module Datacaster
       error_keys.unshift(error_key) if error_key
       string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect).
         json_schema(pattern: regexp.inspect)
-    end
-
-    def pattern(regexp, error_key = nil)
-      error_keys = ['.pattern', 'datacaster.errors.pattern']
-      error_keys.unshift(error_key) if error_key
-      string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect)
     end
 
     # 'hash' would be a bad method name, because it would override built in Object#hash
