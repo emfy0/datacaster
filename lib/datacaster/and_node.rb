@@ -20,6 +20,12 @@ module Datacaster
       end
     end
 
+    def to_json_schema_attributes
+      {
+        required: @casters.any? { |caster| caster.to_json_schema_attributes[:required] }
+      }
+    end
+
     def inspect
       "#<Datacaster::AndNode casters: #{@casters.inspect}>"
     end

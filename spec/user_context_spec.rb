@@ -1,15 +1,6 @@
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
-  before(:all) do
-    @i18n_module = Datacaster::Config.i18n_module
-    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
-  end
-
-  after(:all) do
-    Datacaster::Config.i18n_module = @i18n_module
-  end
-
   describe "using context node (#with_context)" do
     it "allows to access context.something in runtime" do
       type = described_class.schema { check { |x| x == context.test } }
@@ -86,6 +77,31 @@ RSpec.describe Datacaster do
       end
 
       expect(schema.with_context(d: 2, e: 3).({a: 1, b: {c: {d: 10}}, e: [3]}).to_dry_result).to eq Failure({b: {c: {d: ["is invalid"]}}})
+    end
+  end
+
+  describe "using #has_key?" do
+    it "works with deep nesting" do
+      schema = described_class.schema do
+        check { context.has_key?(:b) && context.has_key?(:c) && context.has_key?(:d) && !context.has_key?(:e) }.
+          with_context(b: 1).
+          with_context(c: 2).
+          with_context(d: 3)
+      end
+
+      expect(schema.with_context(a: 1).(1).to_dry_result).to eq Success(1)
+    end
+
+    it "works with complex schemas" do
+      schema = described_class.schema do
+        hash_schema(
+          a: check { context.has_key?(:a) && context.has_key?(:d) && context.has_key?(:e) && !context.has_key?(:f) },
+          b: {c: {d: check { context.has_key?(:a) && context.has_key?(:d) && context.has_key?(:e) && !context.has_key?(:t) }}},
+          e: [check { |v| context.has_key?(:a) && context.has_key?(:d) && context.has_key?(:e) && !context.has_key?(:p) }]
+        ).with_context(a: 1)
+      end
+
+      expect(schema.with_context(d: 2, e: 3).({a: 1, b: {c: {d: 10}}, e: [3]}).to_dry_result).to eq Success({:a=>1, :b=>{:c=>{:d=>10}}, :e=>[3]})
     end
   end
 end

@@ -1,8 +1,8 @@
 module Datacaster
-  class JsonSchemaNode < Base
+  class JsonSchemaAttributes < Base
     def initialize(base, schema_attributes = {}, &block)
       @base = base
-      @schema_attributes = schema_attributes.transform_keys(&:to_s)
+      @schema_attributes = schema_attributes
       @block = block
     end
 
@@ -10,15 +10,15 @@ module Datacaster
       @base.cast(object, runtime: runtime)
     end
 
-    def to_json_schema
-      result = @base.to_json_schema
-      result = result.apply(@schema_attributes)
+    def to_json_schema_attributes
+      result = @base.to_json_schema_attributes
+      result = result.merge(@schema_attributes)
       result = @block.(result) if @block
       result
     end
 
-    def to_json_schema_attributes
-      @base.to_json_schema_attributes
+    def to_json_schema
+      @base.to_json_schema
     end
 
     def inspect

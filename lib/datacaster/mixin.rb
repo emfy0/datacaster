@@ -86,6 +86,16 @@ module Datacaster
       JsonSchemaNode.new(self, schema_attributes, &block)
     end
 
+    def json_schema_attributes(schema_attributes = {}, &block)
+      JsonSchemaAttributes.new(self, schema_attributes, &block)
+    end
+
+    def to_json_schema_attributes
+      {
+        required: true,
+      }
+    end
+
     def to_json_schema
       JsonSchemaResult.new
     end

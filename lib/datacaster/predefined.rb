@@ -89,7 +89,7 @@ module Datacaster
       error_keys = ['.absent', 'datacaster.errors.absent']
       error_keys.unshift(error_key) if error_key
 
-      cast do |x|
+      caster = cast do |x|
         if x == Datacaster.absent ||
           (!on.nil? && x.respond_to?(on) && x.public_send(on))
           Datacaster.ValidResult(Datacaster.absent)
@@ -99,6 +99,10 @@ module Datacaster
           )
         end
       end
+
+      caster
+        .json_schema(type: 'null')
+        .json_schema_attributes(required: false)
     end
 
     def any(error_key = nil)
@@ -135,7 +139,7 @@ module Datacaster
         else
           x
         end
-      end
+      end.json_schema_attributes(required: false)
     end
 
     def merge_message_keys(*keys)
@@ -150,18 +154,23 @@ module Datacaster
 
     def optional(base, on: nil)
       return absent | base if on == nil
-      cast do |x|
+
+      caster = cast do |x|
         if x == Datacaster.absent ||
           (!on.nil? && x.respond_to?(on) && x.public_send(on))
           Datacaster.ValidResult(Datacaster.absent)
         else
           base.(x)
         end
-      end.json_schema(base.to_json_schema)
+      end
+
+      caster
+        .json_schema(base.to_json_schema)
+        .json_schema_attributes(required: false)
     end
 
     def pass
-      transform(&:itself)
+      cast { |v| Datacaster::ValidResult(v) }
     end
 
     def pass_if(base)
@@ -202,7 +211,7 @@ module Datacaster
         end
       end
 
-      must_be(Enumerable) & transform { |input|
+      must_be(Enumerable) & cast { |input|
         result =
           keys.map do |key|
             Array(key).reduce(input) do |result, k|
@@ -211,7 +220,8 @@ module Datacaster
               result
             end
           end
-        keys.length == 1 ? result.first : result
+        result = keys.length == 1 ? result.first : result
+        Datacaster::ValidResult(result)
       }.json_schema(&json_schema)
     end
 
@@ -308,6 +318,12 @@ module Datacaster
 
     # Strict types
 
+    def numeric(error_key = nil)
+      error_keys = ['.numeric', 'datacaster.errors.numeric']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(Numeric) }.i18n_key(*error_keys)
+    end
+
     def decimal(digits = 8, error_key = nil)
       error_keys = ['.decimal', 'datacaster.errors.decimal']
       error_keys.unshift(error_key) if error_key
@@ -372,6 +388,42 @@ module Datacaster
       error_keys.unshift(error_key) if error_key
       integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys).
         json_schema(format: 'int32')
+    end
+
+    def maximum(max, error_key = nil, inclusive: true)
+      subkey = 'lt'
+      subkey += 'eq' if inclusive
+
+      error_keys = [".maximum.#{subkey}", "datacaster.errors.maximum.#{subkey}"]
+
+      error_keys.unshift(error_key) if error_key
+
+      caster =
+        if inclusive
+          check { |x| x <= max }
+        else
+          check { |x| x < max }
+        end
+
+      numeric(error_key) & caster.i18n_key(*error_keys, max:)
+    end
+
+    def minimum(min, error_key = nil, inclusive: true)
+      subkey = 'gt'
+      subkey += 'eq' if inclusive
+
+      error_keys = [".minimum.#{subkey}", "datacaster.errors.minimum.#{subkey}"]
+
+      error_keys.unshift(error_key) if error_key
+
+      caster =
+        if inclusive
+          check { |x| x >= min }
+        else
+          check { |x| x > min }
+        end
+
+      numeric(error_key) & caster.i18n_key(*error_keys, min:)
     end
 
     def string(error_key = nil)

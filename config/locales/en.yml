@@ -6,7 +6,7 @@ en:
       array: should be an array
       cast: is invalid
       check: is invalid
-      compare: "does not equal %{reference}"
+      compare: does not equal %{reference}
       decimal: is not a decimal number
       empty: should not be empty
       float: is not a float
@@ -15,7 +15,14 @@ en:
       integer: is not an integer
       integer32: is not a 32-bit integer
       iso8601: is not a string with ISO-8601 date and time
-      must_be: "is not %{reference}"
+      maximum:
+        lt: should be less than %{max}
+        lteq: should be less than or equal to %{max}
+      minimum:
+        gt: should be greater than %{min}
+        gteq: should be greater than or equal to %{min}
+      must_be: is not %{reference}
+      numeric: is not a number
       pattern: has invalid format
       relate: "%{left} should be %{op} %{right}"
       responds_to: "does not respond to %{reference}"

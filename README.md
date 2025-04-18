@@ -26,10 +26,13 @@ It is currently used in production in several projects (mainly as request parame
     - [`float(error_key = nil)`](#floaterror_key--nil)
     - [`hash_value(error_key = nil)`](#hash_valueerror_key--nil)
     - [`integer(error_key = nil)`](#integererror_key--nil)
+    - [`numeric(error_key = nil)`](#numericerror_key--nil)
     - [`string(error_key = nil)`](#stringerror_key--nil)
   - [Convenience types](#convenience-types)
     - [`hash_with_symbolized_keys(error_key = nil)`](#hash_with_symbolized_keyserror_key--nil)
     - [`integer32(error_key = nil)`](#integer32error_key--nil)
+    - [`maximum(max, error_key = nil, inclusive: true)`](#maximummax-error_key--nil-inclusive-true)
+    - [`minimum(min, error_key = nil, inclusive: true)`](#minimummin-error_key--nil-inclusive-true)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
     - [`pattern(regexp, error_key = nil)`](#patternregexp-error_key--nil)
     - [`uuid(error_key = nil)`](#uuiderror_key--nil)
@@ -500,6 +503,12 @@ Returns ValidResult if and only if provided value is an integer. Doesn't transfo
 
 I18n keys: `error_key`, `'.integer'`, `'datacaster.errors.integer'`.
 
+#### `numeric(error_key = nil)`
+
+Returns ValidResult if and only if provided value is a number (Ruby's `Numeric`). Doesn't transform the value.
+
+I18n keys: `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`.
+
 #### `string(error_key = nil)`
 
 Returns ValidResult if and only if provided value is a string. Doesn't transform the value.
@@ -522,6 +531,26 @@ I18n keys:
 
 * not an integer – `error_key`, `'.integer'`, `'datacaster.errors.integer'`
 * too big – `error_key`, `'.integer32'`, `'datacaster.errors.integer32'`
+
+#### `maximum(max, error_key = nil, inclusive: true)`
+
+Returns ValidResult if and only if provided value is a number and is less than `max`. If `inclusive` set to true, provided value should be less than or equal to `max`. Doesn't transform the value.
+
+I18n keys:
+
+* not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
+* is less (when `inclusive` is `true`) – `error_key`, `'.maximum.lteq'`, `'datacaster.errors.maximum.lteq'`
+* is less (when `inclusive` is `false`) – `error_key`, `'.maximum.lt'`, `'datacaster.errors.maximum.lt'`
+
+#### `minimum(min, error_key = nil, inclusive: true)`
+
+Returns ValidResult if and only if provided value is a number and is greater than `min`. If `inclusive` set to true, provided value should be greater than or equal to `min`. Doesn't transform the value.
+
+I18n keys:
+
+* not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
+* is greater (when `inclusive` is `true`) – `error_key`, `'.minimum.gteq'`, `'datacaster.errors.minimum.gteq'`
+* is greater (when `inclusive` is `false`) – `error_key`, `'.minimum.gt'`, `'datacaster.errors.minimum.gt'`
 
 #### `non_empty_string(error_key = nil)`
 
@@ -849,7 +878,7 @@ I18n keys:
 
 #### `transform_to_value(value)`
 
-Always returns ValidResult. The value is transformed to provided argument (disregarding the original value).
+Always returns ValidResult. The value is transformed to provided argument (disregarding the original value). If the resultant value is a Hash, all its keys are marked as validated and will survive `Datacaster.schema { ... }` call.
 
 Returned value is deeply frozen with [`Ractor::make_shareable`](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
 
@@ -1070,6 +1099,8 @@ Useful to perform some side-effect such as raising an exception, making a log en
 
 Always returns ValidResult. Transforms the value: returns whatever the block has returned.
 
+If the resultant value is a Hash, all its keys are marked as validated and will survive `Datacaster.schema { ... }` call.
+
 ```ruby
 city =
   Datacaster.schema do
@@ -1086,6 +1117,8 @@ city.(name: "Denver", distance: "2.5") # => Datacaster::ValidResult({:name=>"Den
 #### `transform_if_present { |value| ... }`
 
 Always returns ValidResult. If the value is `Datacaster.absent`, then `Datacaster.absent` is returned (the block isn't called). Otherwise, works like [`transform`](#transform--value).
+
+If the resultant value is a Hash, all its keys are marked as validated and will survive `Datacaster.schema { ... }` call.
 
 ### Array schemas
 
@@ -1537,6 +1570,18 @@ schema =
     check { context.five == 5 }.
       with_context(five: 5). # this will win
       with_context(five: 10)
+  end
+
+schema.with_context(five: 15).(nil)
+# => Datacaster::ValidResult(nil)
+```
+
+Method `has_key?` could be used to determine whether key is available in the context
+
+```ruby
+schema =
+  Datacaster.schema do
+    check { context.has_key?(:five) }
   end
 
 schema.with_context(five: 15).(nil)
