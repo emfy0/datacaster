@@ -307,5 +307,31 @@ RSpec.describe Datacaster do
         },
       )
     end
+
+    it "renders to_integer" do
+      schema =
+        Datacaster.schema do
+          to_integer
+        end
+
+      expect(schema.to_json_schema).to eq(
+        {
+          "oneOf" => [{"type"=>"string"}, {"type"=>"number"}]
+        },
+      )
+    end
+
+    it "renders numeric" do
+      schema =
+        Datacaster.schema do
+          numeric
+        end
+
+      expect(schema.to_json_schema).to eq(
+        {
+          "oneOf" => [{"type"=>"string"}, {"type"=>"number"}]
+        },
+      )
+    end
   end
 end

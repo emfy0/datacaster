@@ -321,7 +321,7 @@ module Datacaster
       error_keys.unshift(error_key) if error_key
       check { |x| x.is_a?(Numeric) }.
         i18n_key(*error_keys).
-        json_schema(type: 'number')
+        json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
     end
 
     def decimal(digits = 8, error_key = nil)
@@ -489,7 +489,7 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         Integer(x)
-      end.i18n_key(*error_keys)
+      end.i18n_key(*error_keys).json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
     end
 
     def optional_param(base)
