@@ -385,5 +385,17 @@ RSpec.describe Datacaster do
        "type" => "array",
       })
     end
+
+    it "renders pick & some validation" do
+      schema =
+        Datacaster.schema do
+          pick(:a, :b) & transform { 'a' } & included_in(['a'])
+        end
+
+      expect(schema.to_json_schema).to eq({
+        "properties" => {"a"=>{}, "b"=>{}},
+        "type" => "object",
+      })
+    end
   end
 end

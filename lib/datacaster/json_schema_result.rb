@@ -8,10 +8,12 @@ module Datacaster
       else
         @focus = []
       end
+
       if focus == false || @focus == false
         @focus = false
         return
       end
+
       @focus << focus if focus
       @target = self
       @focus.each { |k| @target = @target['properties'][k] }
@@ -33,6 +35,14 @@ module Datacaster
       return self if other.nil? || other.empty?
       return JsonSchemaResult.new(other) if empty?
 
+      # validations after transform
+      self_type = self['type']
+      other_type = other['type']
+
+      if (self_type == 'object' || self_type == 'array') && (other_type != 'object' && other_type != 'array')
+        return JsonSchemaResult.new(self)
+      end
+
       unless @focus.empty?
         return with_updated_target(JsonSchemaResult.new(@target).apply(other))
       end
@@ -40,9 +50,9 @@ module Datacaster
       result = self.class.new({})
 
       if self['required'] || other['required']
-        result['required'] =
-          ((self['required'] || []).to_set |
-            (other['required'] || []).to_set).to_a
+        result['required'] = (
+          (self['required'] || []).to_set | (other['required'] || []).to_set
+        ).to_a
       end
 
       nested =
