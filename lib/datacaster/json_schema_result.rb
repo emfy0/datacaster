@@ -20,7 +20,7 @@ module Datacaster
     def with_focus_key(key)
       result = apply(
         "type" => "object",
-        "properties" => {key => {}}
+        "properties" => key ? { key => {} } : {}
       )
       self.class.new(result, key)
     end
