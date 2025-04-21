@@ -473,7 +473,20 @@ module Datacaster
         else
           Datacaster.ErrorResult(I18nValues::Key.new(error_keys, value: x))
         end
-      end
+      end.json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'boolean' }])
+    end
+
+    def boolean(value, error_key = nil)
+      error_keys = ['.boolean', 'datacaster.errors.boolean']
+      error_keys.unshift(error_key) if error_key
+
+      cast do |x|
+        if [false, true].include?(x)
+          Datacaster.ValidResult(x)
+        else
+          Datacaster.ErrorResult(I18nValues::Key.new(error_keys, value: x))
+        end
+      end.json_schema(type:'boolean')
     end
 
     def to_float(error_key = nil)
