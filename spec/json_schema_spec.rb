@@ -224,7 +224,7 @@ RSpec.describe Datacaster do
         "properties" => {
           "username" => {
             'description' => 'The username of the user',
-            "anyOf" => [{"type"=>"null"}, {"type"=>"string"}]
+            "type"=>"string"
           },
           "email" => {
             "description" => "The email of the user",
@@ -244,7 +244,7 @@ RSpec.describe Datacaster do
 
       expect(schema.to_json_schema).to eq(
         {
-          "anyOf" => [{"type"=>"null"}, {"type"=>"string"}]
+          "type"=>"string"
         },
       )
     end
@@ -257,20 +257,53 @@ RSpec.describe Datacaster do
 
       expect(schema.to_json_schema).to eq(
         {
-          "anyOf" => [{"type"=>"null"}, {"type"=>"string"}]
+          "type"=>"string"
         },
       )
     end
 
-    it "renders schemas with default(...)" do
+    it "renders schemas with compare(nil)" do
       schema =
         Datacaster.schema do
-          optional(string) & default('Unknown')
+          compare(nil) | compare('sdf')
         end
 
       expect(schema.to_json_schema).to eq(
         {
-          "anyOf" => [{"type"=>"null"}, {"type"=>"string"}]
+          "anyOf" => [{"enum"=>[nil]}, {"enum"=>["sdf"]}]
+        },
+      )
+    end
+
+    it "renders schemas with array" do
+      schema =
+        Datacaster.schema do
+          array_of(compare(nil) | compare('sdf'))
+        end
+
+      expect(schema.to_json_schema).to eq(
+        {
+          "items" => {
+            "anyOf"=>[{"enum"=>[nil]}, {"enum"=>["sdf"]}],
+          },
+          "type" => "array",
+        },
+      )
+    end
+
+    it "renders hash schemas with array" do
+      schema =
+        Datacaster.schema do
+          hash_schema(
+            test: array_of(compare(nil) | compare('sdf'))
+          )
+        end
+
+      expect(schema.to_json_schema).to eq(
+        {
+          "properties" => {"test"=>{"items"=>{"anyOf"=>[{"enum"=>[nil]}, {"enum"=>["sdf"]}]}, "type"=>"array"}},
+          "required" => ["test"],
+          "type" => "object",
         },
       )
     end

@@ -89,7 +89,7 @@ module Datacaster
       error_keys = ['.absent', 'datacaster.errors.absent']
       error_keys.unshift(error_key) if error_key
 
-      caster = cast do |x|
+      cast do |x|
         if x == Datacaster.absent ||
           (!on.nil? && x.respond_to?(on) && x.public_send(on))
           Datacaster.ValidResult(Datacaster.absent)
@@ -98,11 +98,7 @@ module Datacaster
             I18nValues::Key.new(error_keys, value: x)
           )
         end
-      end
-
-      caster
-        .json_schema(type: 'null')
-        .json_schema_attributes(required: false)
+      end.json_schema_attributes(required: false)
     end
 
     def any(error_key = nil)
@@ -153,7 +149,9 @@ module Datacaster
     end
 
     def optional(base, on: nil)
-      return absent | base if on == nil
+      if on == nil
+        return (absent | base).json_schema { base.to_json_schema }.json_schema_attributes(required: false)
+      end
 
       caster = cast do |x|
         if x == Datacaster.absent ||
@@ -321,7 +319,9 @@ module Datacaster
     def numeric(error_key = nil)
       error_keys = ['.numeric', 'datacaster.errors.numeric']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Numeric) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Numeric) }.
+        i18n_key(*error_keys).
+        json_schema(type: 'number')
     end
 
     def decimal(digits = 8, error_key = nil)
@@ -333,7 +333,7 @@ module Datacaster
         Float(x)
 
         BigDecimal(x, digits)
-      end.i18n_key(*error_keys)
+      end.i18n_key(*error_keys).json_schema(type: 'string')
     end
 
     def array(error_key = nil)
@@ -361,7 +361,9 @@ module Datacaster
     def hash_value(error_key = nil)
       error_keys = ['.hash_value', 'datacaster.errors.hash_value']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Hash) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Hash) }.
+        i18n_key(*error_keys).
+        json_schema(type: 'object')
     end
 
     def hash_with_symbolized_keys(error_key = nil)
