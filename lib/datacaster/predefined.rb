@@ -339,7 +339,9 @@ module Datacaster
     def array(error_key = nil)
       error_keys = ['.array', 'datacaster.errors.array']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Array) }.i18n_key(*error_keys).
+
+      check { |x| x.is_a?(Array) }.
+        i18n_key(*error_keys).
         json_schema(type: 'array')
     end
 
@@ -444,7 +446,7 @@ module Datacaster
     def uuid(error_key = nil)
       error_keys = ['.uuid', 'datacaster.errors.uuid']
       error_keys.unshift(error_key) if error_key
-      string(error_key) & pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/).i18n_key(*error_keys)
+      pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, error_key).i18n_key(*error_keys)
     end
 
     # Form request types

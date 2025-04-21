@@ -142,7 +142,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on integers" do
-      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not UUID"])
     end
 
     it "returns Failure on non-UUID strings" do

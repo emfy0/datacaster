@@ -333,5 +333,57 @@ RSpec.describe Datacaster do
         },
       )
     end
+
+    it "renders uuid" do
+      schema =
+        Datacaster.schema do
+          uuid
+        end
+
+      expect(schema.to_json_schema).to eq(
+        {
+          "type"=>"string",
+          "pattern" => "/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/"
+        },
+      )
+    end
+
+    it "renders array_of(uuid)" do
+      schema =
+        Datacaster.schema do
+          array_of(uuid)
+        end
+
+      expect(schema.to_json_schema).to eq({
+       "items" => {"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"},
+       "type" => "array",
+      })
+    end
+
+    it "renders compare(nil) | array_of(uuid)" do
+      schema =
+        Datacaster.schema do
+          compare(nil) | array_of(uuid)
+        end
+
+      expect(schema.to_json_schema).to eq({
+       "anyOf" => [
+         {"enum"=>[nil]},
+         {"items"=>{"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"}, "type"=>"array"},
+       ],
+      })
+    end
+
+    it "renders array & array_of(uuid)" do
+      schema =
+        Datacaster.schema do
+          array & array_of(uuid)
+        end
+
+      expect(schema.to_json_schema).to eq({
+       "items" => {"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"},
+       "type" => "array",
+      })
+    end
   end
 end

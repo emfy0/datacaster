@@ -63,14 +63,31 @@ module Datacaster
       if nested
         result[nested] = {}
 
-        keys =
-          (self[nested] || {}).keys +
-          (other[nested] || {}).keys
+        keys = (self[nested] || {}).keys + (other[nested] || {}).keys
         keys = keys.to_set
+
         keys.each do |k|
           one_k = self[nested] && self[nested][k] || {}
           two_k = other[nested] && other[nested][k] || {}
-          result[nested][k] = self.class.new(one_k).apply(two_k)
+
+          if !one_k.is_a?(Hash) || !two_k.is_a?(Hash)
+            if one_k.empty? && !two_k.is_a?(Hash)
+              result[nested][k] = two_k
+            elsif two_k.empty? && !one_k.is_a?(Hash)
+              result[nested][k] = one_k
+            elsif one_k == two_k
+              result[nested][k] = one_k
+            else
+              raise RuntimeError, "can't merge json schemas due to wrong items/properties combination " \
+                "for #{self.inspect} and #{other.inspect}", caller
+            end
+          elsif one_k.is_a?(Hash) && two_k.is_a?(Hash)
+            result[nested][k] = self.class.new(one_k).apply(two_k)
+          else
+            raise RuntimeError, "can't merge json schemas due to wrong items/properties combination " \
+              "for #{self.inspect} and #{other.inspect}", caller
+          end
+
         end
       end
 
