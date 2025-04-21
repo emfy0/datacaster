@@ -31,7 +31,6 @@ module Datacaster
 
     def apply(other)
       return self if other.nil? || other.empty?
-      return self if @focus.last == false
       return JsonSchemaResult.new(other) if empty?
 
       unless @focus.empty?
