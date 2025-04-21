@@ -22,6 +22,19 @@ module Datacaster
       end
     end
 
+
+    def to_json_schema
+      @casters.reduce(JsonSchemaResult.new) do |result, caster|
+        result.apply(caster.to_json_schema)
+      end
+    end
+
+    def to_json_schema_attributes
+      {
+        required: [@left, @right].any? { |caster| caster.to_json_schema_attributes[:required] }
+      }
+    end
+
     def inspect
       "#<Datacaster::AndWithErrorAggregationNode L: #{@left.inspect} R: #{@right.inspect}>"
     end

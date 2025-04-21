@@ -14,6 +14,10 @@ module Datacaster
       @base.to_json_schema
     end
 
+    def to_json_schema_attributes
+      @base.to_json_schema_attributes
+    end
+
     def inspect
       "#<#{self.class.name} base: #{@base.inspect}>"
     end
