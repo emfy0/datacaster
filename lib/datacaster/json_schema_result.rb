@@ -35,16 +35,16 @@ module Datacaster
       return self if other.nil? || other.empty?
       return JsonSchemaResult.new(other) if empty?
 
-      # validations after transform
+      if @focus && !@focus.empty?
+        return with_updated_target(JsonSchemaResult.new(@target).apply(other))
+      end
+
+      # validations after pick(a, b) & transform
       self_type = self['type']
       other_type = other['type']
 
       if (self_type == 'object' || self_type == 'array') && (other_type != 'object' && other_type != 'array')
         return JsonSchemaResult.new(self)
-      end
-
-      unless @focus.empty?
-        return with_updated_target(JsonSchemaResult.new(@target).apply(other))
       end
 
       result = self.class.new({})

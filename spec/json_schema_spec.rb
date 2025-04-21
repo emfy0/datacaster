@@ -397,5 +397,17 @@ RSpec.describe Datacaster do
         "type" => "object",
       })
     end
+
+    it "renders single pick & some validation" do
+      schema =
+        Datacaster.schema do
+          pick(:a) & included_in(['a'])
+        end
+
+      expect(schema.to_json_schema).to eq({
+        "properties" => {"a"=>{"enum"=>["a"]}},
+        "type" => "object",
+      })
+    end
   end
 end
