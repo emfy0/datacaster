@@ -62,7 +62,7 @@ module Datacaster
             if one_to_one_remap
               Datacaster::Utils.deep_merge(to_props, from_props)
             else
-              self.class.new({})
+              self.class.new(properties_from || {})
             end
         end
 
