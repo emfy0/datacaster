@@ -57,7 +57,7 @@ module Datacaster
         properties_from = value['properties'].delete(from)
         properties_to = value['properties'].delete(to)
 
-        if properties_to || properties_from
+        if from && (properties_to || properties_from)
           value['properties'][from] =
             if one_to_one_remap
               Datacaster::Utils.deep_merge(to_props, from_props)
@@ -69,7 +69,7 @@ module Datacaster
         required_from = value['required']&.delete(from)
         required_to = value['required']&.delete(to)
 
-        if one_to_one_remap && (required_from || required_to)
+        if from && one_to_one_remap && (required_from || required_to)
           value['required'] << from
         end
       end

@@ -357,6 +357,23 @@ RSpec.describe Datacaster do
       })
     end
 
+    it 'render transform_to_hash without pick' do
+      schema =
+        Datacaster.schema do
+          transform_to_hash(
+            rest_string: transform { |x| '' }
+          ) & hash_schema(
+            rest_string: string
+          )
+        end
+
+      expect(schema.to_json_schema).to eq({
+        "properties" => {},
+        "required" => [],
+        "type"=>"object",
+      })
+    end
+
     it "renders schemas with hash_schema with default" do
       schema =
         Datacaster.schema do

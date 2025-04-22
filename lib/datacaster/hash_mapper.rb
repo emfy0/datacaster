@@ -83,7 +83,13 @@ module Datacaster
     def to_json_schema_attributes
       super.merge(
         remaped: @fields.flat_map do |key, caster|
-          caster.to_json_schema_attributes[:picked].map { |picked| { picked.to_s => key.to_s } }
+          picked = caster.to_json_schema_attributes[:picked]
+
+          if picked.any?
+            picked.map { |picked| { picked.to_s => key.to_s } }
+          else
+            { nil => key.to_s }
+          end
         end.reduce(&:merge)
       )
     end
