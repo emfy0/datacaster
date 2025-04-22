@@ -318,6 +318,26 @@ RSpec.describe Datacaster do
       )
     end
 
+    it 'renders schemas with many to one remapping' do
+      schema =
+        Datacaster.schema do
+          transform_to_hash(
+            rest_string: pick(:string1, :string2) & transform(&:first)
+          ) & hash_schema(
+            rest_string: string
+          )
+        end
+
+      expect(schema.to_json_schema).to eq({
+       "properties" => {
+         "string1"=>{},
+         "string2"=>{},
+       },
+       "required" => [],
+        "type"=>"object",
+      })
+    end
+
     it 'render schemas with transform_to_hash and hash_schema' do
       schema =
         Datacaster.schema do

@@ -54,12 +54,23 @@ module Datacaster
 
         one_to_one_remap = mapping.values.count { _1 == to } == 1
 
-        if value['properties'].delete(from) && one_to_one_remap
-          value['properties'][to] = Datacaster::Utils.deep_merge(to_props, from_props)
+        properties_from = value['properties'].delete(from)
+        properties_to = value['properties'].delete(to)
+
+        if properties_to || properties_from
+          value['properties'][from] =
+            if one_to_one_remap
+              Datacaster::Utils.deep_merge(to_props, from_props)
+            else
+              self.class.new({})
+            end
         end
 
-        if value['required']&.delete(from) && one_to_one_remap
-          value['required'] = value['required'] | [to]
+        required_from = value['required']&.delete(from)
+        required_to = value['required']&.delete(to)
+
+        if one_to_one_remap && (required_from || required_to)
+          value['required'] << from
         end
       end
 
