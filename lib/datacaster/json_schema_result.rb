@@ -48,17 +48,17 @@ module Datacaster
     def object_remap(value, mapping)
       return value unless value['type'] == 'object'
 
-      mapping.each do |to, from|
+      mapping.each do |from, to|
         from_props = value['properties'][from] || {}
         to_props = value['properties'][to] || {}
 
-        result = Datacaster::Utils.deep_merge(to_props, from_props)
+        one_to_one_remap = mapping.values.count { _1 == to } == 1
 
-        if value['properties'].delete(from)
-          value['properties'][to] = result
+        if value['properties'].delete(from) && one_to_one_remap
+          value['properties'][to] = Datacaster::Utils.deep_merge(to_props, from_props)
         end
 
-        if value['required']&.delete(from)
+        if value['required']&.delete(from) && one_to_one_remap
           value['required'] = value['required'] | [to]
         end
       end
