@@ -473,10 +473,13 @@ module Datacaster
         else
           Datacaster.ErrorResult(I18nValues::Key.new(error_keys, value: x))
         end
-      end.json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'boolean' }])
+      end.json_schema(oneOf: [
+        { 'type' => 'string', 'enum' => ['true', 'false', '1', '0'] },
+        { 'type' => 'boolean' },
+      ])
     end
 
-    def boolean(value, error_key = nil)
+    def boolean(error_key = nil)
       error_keys = ['.boolean', 'datacaster.errors.boolean']
       error_keys.unshift(error_key) if error_key
 

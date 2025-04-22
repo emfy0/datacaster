@@ -45,6 +45,7 @@ module Datacaster
 
     def else(else_caster)
       raise ArgumentError, "Datacaster: double else clause is not permitted", caller if @else
+      else_caster = DefinitionDSL.expand(else_caster)
       self.class.new(@base, on_casters: @ons, else_caster: else_caster, pick_key: @pick_key)
     end
 
@@ -84,11 +85,19 @@ module Datacaster
 
       base = @base.to_json_schema
 
-      JsonSchemaResult.new(
-        "oneOf" => @ons.map { |on|
-          base.apply(on[0].to_json_schema).without_focus.apply(on[1].to_json_schema)
-        }
-      )
+      schema_result = @ons.map { |on|
+        base.apply(on[0].to_json_schema).without_focus.apply(on[1].to_json_schema)
+      }
+
+      if @else
+        schema_result << @else.to_json_schema
+      end
+
+      JsonSchemaResult.new( "oneOf" => schema_result )
+    end
+
+    def to_json_schema_attributes
+      { required: true, extendable: true }
     end
 
     def inspect

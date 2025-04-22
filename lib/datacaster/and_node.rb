@@ -16,7 +16,7 @@ module Datacaster
 
     def to_json_schema
       @casters.reduce(JsonSchemaResult.new) do |result, caster|
-        result.apply(caster.to_json_schema)
+        result.apply(caster.to_json_schema, caster.to_json_schema_attributes)
       end
     end
 

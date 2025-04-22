@@ -209,6 +209,139 @@ RSpec.describe Datacaster do
       )
     end
 
+    it "renders switch schemas" do
+      schema =
+        Datacaster.schema do
+          switch('kind').
+            on(:string, {id: string}).
+            on(:integer, {id: integer}).
+            on(:uuid, {id: uuid}).
+            else({id: boolean})
+
+        end
+
+      expect(schema.to_json_schema).to eq(
+        "oneOf" => [
+          {
+            "properties"=>{
+              "id"=>{"type"=>"string"},
+              "kind"=>{"enum"=>["string"]},
+            },
+            "required"=>["id"],
+            "type"=>"object",
+          },
+          {
+            "properties"=>{
+              "id"=>{"type"=>"integer"},
+              "kind"=>{"enum"=>["integer"]},
+            },
+            "required"=>["id"],
+            "type"=>"object",
+          },
+          {
+            "properties"=>{
+              "id"=>{
+                "pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/",
+                "type"=>"string",
+              },
+              "kind"=>{"enum"=>["uuid"]},
+            },
+            "required"=>["id"],
+            "type"=>"object",
+          },
+          {
+            "properties"=>{
+              "id"=>{"type"=>"boolean"},
+            },
+            "required"=>["id"],
+            "type"=>"object",
+          },
+        ],
+      )
+    end
+
+    it "renders complex switch schemas" do
+      schema =
+        Datacaster.schema do
+          extract_string = transform_to_hash(
+            rest_string: pick(:string)
+          )
+
+          extract_integer = transform_to_hash(
+            rest_integer: pick(:integer)
+          )
+
+          extract_schema =
+            switch('kind').
+              on(:string, extract_string).
+              on(:integer, extract_integer).
+              else(pass)
+
+          base_schema = switch('kind').
+            on(:string, { kind: compare('string'), rest_string: string, other_string: string }).
+            on(:integer, { kind: compare('integer'), rets_integer: integer, other_integer: string }).
+            on(:none, { kind: compare('none'), rest_none: string })
+
+          extract_schema & base_schema
+        end
+
+      expect(schema.to_json_schema).to eq(
+        "oneOf" => [
+          {
+            "properties"=>{
+              "kind"=>{ "enum"=>[ "string" ] },
+              "other_string"=>{ "type"=>"string" },
+              "rest_string"=>{ "type"=>"string" },
+              "string"=>{},
+            },
+            "required"=>[ "kind", "rest_string", "other_string" ],
+            "type"=>"object",
+          },
+          {
+            "properties"=>{
+              "integer"=>{},
+              "kind"=>{"enum"=>[ "integer" ]},
+              "other_integer"=>{"type"=>"string"},
+              "rets_integer"=>{"type"=>"integer"},
+            },
+            "required"=>[ "kind", "rets_integer", "other_integer" ],
+            "type"=>"object",
+          },
+          {
+            "properties"=>{
+              "kind"=>{"enum"=>[ "none", "string" ]},
+              "rest_none"=>{"type"=>"string"},
+              "string"=>{},
+            },
+            "required"=>[ "kind", "rest_none" ],
+            "type"=>"object",
+          },
+        ]
+      )
+    end
+
+    it 'render schemas with transform_to_hash and hash_schema' do
+      schema =
+        Datacaster.schema do
+          transform_to_hash(
+            rest_string: pick(:string)
+          ) & hash_schema(
+            string:
+          )
+        end
+
+      expect(schema.to_json_schema).to eq({
+        "properties"=>{
+          "string"=>{
+            "properties"=>{"string"=>{"type"=>"string"}},
+            "required"=>["string"],
+            "type"=>"object",
+          },
+        },
+        "type"=>"object",
+      })
+    end
+
     it "renders schemas with hash_schema with default" do
       schema =
         Datacaster.schema do

@@ -31,7 +31,7 @@ module Datacaster
       self.class.new(self).reset_focus
     end
 
-    def apply(other)
+    def apply(other, schema_attributes = {})
       return self if other.nil? || other.empty?
       return JsonSchemaResult.new(other) if empty?
 
@@ -105,9 +105,37 @@ module Datacaster
       end
 
       (self.keys + other.keys - %w(required properties items description)).to_set.each do |k|
-        if self[k] && other[k] && self[k] != other[k]
-          raise RuntimeError, "can't merge json schemas due to conflicting field #{k} for " \
-            "#{inspect} and #{other.inspect}", caller
+        # used to merge switch schemas
+        if schema_attributes[:extendable]
+          case k
+          in 'oneOf'
+            self_one_of = self[k]
+            other_one_of = other[k]
+
+            result_objects = other_one_of.map do |other_obj|
+              other_obj_properties = other_obj['properties'].to_a
+
+              merge_candidate = self_one_of.max_by do |self_obj|
+                next 0 if self_obj.empty?
+
+                self_obj_properties = self_obj['properties'].to_a
+
+                (self_obj_properties & other_obj_properties).size
+              end
+
+              Datacaster::Utils.deep_merge(other_obj, merge_candidate)
+            end
+
+            next result[k] = result_objects
+          else
+            raise RuntimeError, "can't merge json schemas due to conflicting field #{k} for " \
+              "#{inspect} and #{other.inspect}", caller
+          end
+        else
+          if self[k] && other[k] && self[k] != other[k]
+            raise RuntimeError, "can't merge json schemas due to conflicting field #{k} for " \
+              "#{inspect} and #{other.inspect}", caller
+          end
         end
 
         result[k] = other[k] || self[k]
