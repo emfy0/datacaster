@@ -289,12 +289,11 @@ RSpec.describe Datacaster do
         "oneOf" => [
           {
             "properties"=>{
-              "kind"=>{ "enum"=>[ "string" ] },
-              "other_string"=>{ "type"=>"string" },
-              "rest_string"=>{ "type"=>"string" },
-              "string"=>{},
+              "kind"=>{"enum"=>[ "string" ]},
+              "other_string"=>{"type"=>"string"},
+              "string"=>{"type"=>"string"},
             },
-            "required"=>[ "kind", "rest_string", "other_string" ],
+            "required"=>[ "kind", "other_string", "string" ],
             "type"=>"object",
           },
           {
@@ -309,9 +308,8 @@ RSpec.describe Datacaster do
           },
           {
             "properties"=>{
-              "kind"=>{"enum"=>[ "none", "string" ]},
+              "kind"=>{"enum"=>[ "none" ]},
               "rest_none"=>{"type"=>"string"},
-              "string"=>{},
             },
             "required"=>[ "kind", "rest_none" ],
             "type"=>"object",
@@ -326,18 +324,15 @@ RSpec.describe Datacaster do
           transform_to_hash(
             rest_string: pick(:string)
           ) & hash_schema(
-            string:
+            rest_string: string
           )
         end
 
       expect(schema.to_json_schema).to eq({
-        "properties"=>{
-          "string"=>{
-            "properties"=>{"string"=>{"type"=>"string"}},
-            "required"=>["string"],
-            "type"=>"object",
-          },
+        "properties" => {
+          "string"=>{ "type"=>"string" },
         },
+        "required" => ["string"],
         "type"=>"object",
       })
     end

@@ -20,9 +20,11 @@ module Datacaster
     end
 
     def to_json_schema_attributes
-      {
-        required: @left.to_json_schema_attributes[:required] && @right.to_json_schema_attributes[:required]
-      }
+      super.merge(
+        required:
+          @left.to_json_schema_attributes[:required] &&
+            @right.to_json_schema_attributes[:required]
+      )
     end
 
     def inspect

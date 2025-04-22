@@ -196,7 +196,7 @@ module Datacaster
         end
       end
 
-      json_schema = ->(previous) do
+      json_schema = -> (previous) do
         previous = previous.apply({
           'type' => 'object',
           'properties' => keys.map { |k, v| [k.to_s, JsonSchemaResult.new] }.to_h
@@ -220,7 +220,7 @@ module Datacaster
           end
         result = keys.length == 1 ? result.first : result
         Datacaster::ValidResult(result)
-      }.json_schema(&json_schema)
+      }.json_schema(&json_schema).json_schema_attributes(picked: keys)
     end
 
     def relate(left, op, right, error_key: nil)

@@ -97,7 +97,13 @@ module Datacaster
     end
 
     def to_json_schema_attributes
-      { required: true, extendable: true }
+      super.merge(
+        extendable: true,
+        remaped:
+          [@base, @else, *@ons.map(&:last)].compact.reduce({}) do |result, caster|
+            result.merge(caster.to_json_schema_attributes[:remaped])
+          end
+      )
     end
 
     def inspect

@@ -91,7 +91,7 @@ module Datacaster
     end
 
     def to_json_schema_attributes
-      { required: true, extendable: false }
+      { required: true, extendable: false, remaped: {}, picked: [] }
     end
 
     def to_json_schema

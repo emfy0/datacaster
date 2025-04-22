@@ -31,6 +31,41 @@ module Datacaster
       self.class.new(self).reset_focus
     end
 
+    def remap(mapping)
+      return self if mapping.empty?
+
+      if self['oneOf'] || self['anyOf']
+        type = self.keys.first
+
+        self[type] = self[type].map { |props| object_remap(props, mapping) }
+      else
+        object_remap(self, mapping)
+      end
+
+      self
+    end
+
+    def object_remap(value, mapping)
+      return value unless value['type'] == 'object'
+
+      mapping.each do |to, from|
+        from_props = value['properties'][from] || {}
+        to_props = value['properties'][to] || {}
+
+        result = Datacaster::Utils.deep_merge(to_props, from_props)
+
+        if value['properties'].delete(from)
+          value['properties'][to] = result
+        end
+
+        if value['required']&.delete(from)
+          value['required'] = value['required'] | [to]
+        end
+      end
+
+      value
+    end
+
     def apply(other, schema_attributes = {})
       return self if other.nil? || other.empty?
       return JsonSchemaResult.new(other) if empty?
@@ -115,13 +150,20 @@ module Datacaster
             result_objects = other_one_of.map do |other_obj|
               other_obj_properties = other_obj['properties'].to_a
 
+              max_same = -1
+
+              # basicly is guessing here, but must be ok in most cases
               merge_candidate = self_one_of.max_by do |self_obj|
-                next 0 if self_obj.empty?
+                next -1 if self_obj.empty?
 
                 self_obj_properties = self_obj['properties'].to_a
 
-                (self_obj_properties & other_obj_properties).size
+                max_same = (self_obj_properties & other_obj_properties).size
+
+                max_same
               end
+
+              next other_obj if max_same < 1
 
               Datacaster::Utils.deep_merge(other_obj, merge_candidate)
             end

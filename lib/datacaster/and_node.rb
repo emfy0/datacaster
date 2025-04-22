@@ -15,15 +15,30 @@ module Datacaster
     end
 
     def to_json_schema
-      @casters.reduce(JsonSchemaResult.new) do |result, caster|
-        result.apply(caster.to_json_schema, caster.to_json_schema_attributes)
-      end
+      result =
+        @casters.reduce(JsonSchemaResult.new) do |result, caster|
+          result.apply(caster.to_json_schema, caster.to_json_schema_attributes)
+        end
+
+      mapping =
+        @casters.reduce({}) do |result, caster|
+          result.merge(caster.to_json_schema_attributes[:remaped])
+        end
+
+      result.remap(mapping)
     end
 
     def to_json_schema_attributes
-      {
-        required: @casters.any? { |caster| caster.to_json_schema_attributes[:required] }
-      }
+      super.merge(
+        required:
+          @casters.any? { |caster| caster.to_json_schema_attributes[:required] },
+        picked:
+          @casters.flat_map { |caster| caster.to_json_schema_attributes[:picked] },
+        remaped:
+          @casters.reduce({}) do |result, caster|
+            result.merge(caster.to_json_schema_attributes[:remaped])
+          end
+      )
     end
 
     def inspect
