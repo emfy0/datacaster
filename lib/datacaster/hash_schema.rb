@@ -43,10 +43,12 @@ module Datacaster
     end
 
     def to_json_schema
+      not_hidden_fields = @fields.reject { |_k ,v| v.to_json_schema_attributes[:hidden] }
+
       JsonSchemaResult.new({
         "type" => "object",
-        "properties" => @fields.map { |k, v| [k.to_s, v.to_json_schema] }.to_h,
-        "required" => @fields.select { |_k ,v| v.to_json_schema_attributes[:required] }.keys.map(&:to_s),
+        "properties" => not_hidden_fields.map { |k, v| [k.to_s, v.to_json_schema] }.to_h,
+        "required" => not_hidden_fields.select { |_k ,v| v.to_json_schema_attributes[:required] }.keys.map(&:to_s),
       })
     end
 
