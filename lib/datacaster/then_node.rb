@@ -41,6 +41,14 @@ module Datacaster
       )
     end
 
+    def to_json_schema_attributes
+      super.merge(
+        required:
+          @left.to_json_schema_attributes[:required] &&
+            @else.to_json_schema_attributes[:required]
+      )
+    end
+
     def inspect
       "#<Datacaster::ThenNode Then: #{@then.inspect} Else: #{@else.inspect}>"
     end
