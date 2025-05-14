@@ -13,7 +13,13 @@ module Datacaster
     end
 
     def compare(value, error_key = nil)
-      Comparator.new(value, error_key).json_schema(enum: [value])
+      comparator = Comparator.new(value, error_key)
+
+      if value.nil?
+        comparator.json_schema(type: 'null')
+      else
+        comparator.json_schema(enum: [value])
+      end
     end
 
     def run(&block)
