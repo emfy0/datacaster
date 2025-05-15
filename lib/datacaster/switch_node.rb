@@ -27,12 +27,12 @@ module Datacaster
           caster_or_value
         when String, Symbol
           if strict
-            Datacaster::Predefined.compare(caster_or_value)
+            Datacaster::Predefined.compare(caster_or_value).json_schema { {"type" => "string", "enum" => [caster_or_value.to_s]} }
           else
             (
               Datacaster::Predefined.compare(caster_or_value.to_s) |
                 Datacaster::Predefined.compare(caster_or_value.to_sym)
-            ).json_schema { {"enum" => [caster_or_value.to_s]} }
+            ).json_schema { {"type" => "string", "enum" => [caster_or_value.to_s]} }
           end
         else
           Datacaster::Predefined.compare(caster_or_value)
