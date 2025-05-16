@@ -1,7 +1,8 @@
 module Datacaster
   class ArraySchema < Base
-    def initialize(element_caster, error_keys = {})
+    def initialize(element_caster, error_keys = {}, allow_empty: false)
       @element_caster = element_caster
+      @allow_empty = allow_empty
 
       @not_array_error_keys = ['.array', 'datacaster.errors.array']
       @not_array_error_keys.unshift(error_keys[:array]) if error_keys[:array]
@@ -12,7 +13,7 @@ module Datacaster
 
     def cast(array, runtime:)
       return Datacaster.ErrorResult(I18nValues::Key.new(@not_array_error_keys, value: array)) if !array.respond_to?(:map) || !array.respond_to?(:zip)
-      return Datacaster.ErrorResult(I18nValues::Key.new(@empty_error_keys, value: array)) if array.empty?
+      return Datacaster.ErrorResult(I18nValues::Key.new(@empty_error_keys, value: array)) if array.empty? && !@allow_empty
 
       runtime.will_check!
 

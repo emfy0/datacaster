@@ -40,8 +40,8 @@ module Datacaster
       Trier.new(catched_exception, error_key, &block)
     end
 
-    def array_schema(element_caster, error_keys = {})
-      ArraySchema.new(DefinitionDSL.expand(element_caster), error_keys)
+    def array_schema(element_caster, error_keys = {}, allow_empty: false)
+      ArraySchema.new(DefinitionDSL.expand(element_caster), error_keys, allow_empty:)
     end
     alias_method :array_of, :array_schema
 

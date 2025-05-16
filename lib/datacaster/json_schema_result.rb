@@ -152,6 +152,20 @@ module Datacaster
 
       (self.keys + other.keys - %w(required properties items description)).to_set.each do |k|
         # used to merge switch schemas
+        # TODO: подумать как сделать в обратную сторону
+        #     FULL_DETAILS_SCHEMA = Datacaster.partial_schema do
+            #   LoanTransferMethods::InitiatorTransferDetailsStruct.schema & switch(
+            #     :kind,
+            #     product: hash_schema(
+            #       currency: string,
+            #       us_only: boolean,
+            #       name: string,
+            #       values: array_of(integer),
+            #       official_provider_name: string,
+            #     )
+            #   ).else(pass)
+            # end
+
         if schema_attributes[:extendable]
           case k
           in 'oneOf'
