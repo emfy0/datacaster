@@ -14,6 +14,10 @@ module Datacaster
       Datacaster::ValidResult(result)
     end
 
+    def to_json_schema_attributes
+      super.merge(required: false)
+    end
+
     def inspect
       "#<Datacaster::Transformer>"
     end

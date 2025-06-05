@@ -1,6 +1,13 @@
+require 'set'
+
 module Datacaster
   module Utils
     extend self
+
+    def deep_merge(first, second)
+      merger = proc { |_, v1, v2| Hash === v1 && Hash === v2 ? v1.merge(v2, &merger) : Array === v1 && Array === v2 ? v1 | v2 : [:undefined, nil, :nil].include?(v2) ? v1 : v2 }
+      first.merge(second.to_h, &merger)
+    end
 
     def deep_freeze(value, copy: true)
       Ractor.make_shareable(value, copy:)

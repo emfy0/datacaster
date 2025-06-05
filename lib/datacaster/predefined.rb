@@ -13,7 +13,13 @@ module Datacaster
     end
 
     def compare(value, error_key = nil)
-      Comparator.new(value, error_key)
+      comparator = Comparator.new(value, error_key)
+
+      if value.nil?
+        comparator.json_schema(type: 'null')
+      else
+        comparator.json_schema(enum: [value])
+      end
     end
 
     def run(&block)
@@ -34,8 +40,8 @@ module Datacaster
       Trier.new(catched_exception, error_key, &block)
     end
 
-    def array_schema(element_caster, error_keys = {})
-      ArraySchema.new(DefinitionDSL.expand(element_caster), error_keys)
+    def array_schema(element_caster, error_keys = {}, allow_empty: false)
+      ArraySchema.new(DefinitionDSL.expand(element_caster), error_keys, allow_empty:)
     end
     alias_method :array_of, :array_schema
 
@@ -98,7 +104,7 @@ module Datacaster
             I18nValues::Key.new(error_keys, value: x)
           )
         end
-      end
+      end.json_schema_attributes(required: false)
     end
 
     def any(error_key = nil)
@@ -135,7 +141,7 @@ module Datacaster
         else
           x
         end
-      end
+      end.json_schema_attributes(required: false)
     end
 
     def merge_message_keys(*keys)
@@ -149,8 +155,11 @@ module Datacaster
     end
 
     def optional(base, on: nil)
-      return absent | base if on == nil
-      cast do |x|
+      if on == nil
+        return (absent | base).json_schema { base.to_json_schema }.json_schema_attributes(required: false)
+      end
+
+      caster = cast do |x|
         if x == Datacaster.absent ||
           (!on.nil? && x.respond_to?(on) && x.public_send(on))
           Datacaster.ValidResult(Datacaster.absent)
@@ -158,10 +167,15 @@ module Datacaster
           base.(x)
         end
       end
+
+      caster
+        .json_schema(base.to_json_schema)
+        .json_schema_attributes(required: false)
     end
 
     def pass
       cast { |v| Datacaster::ValidResult(v) }
+        .json_schema_attributes(required: false)
     end
 
     def pass_if(base)
@@ -189,6 +203,19 @@ module Datacaster
         end
       end
 
+      json_schema = -> (previous) do
+        previous = previous.apply({
+          'type' => 'object',
+          'properties' => keys.map { |k, v| [k.to_s, JsonSchemaResult.new] }.to_h
+        })
+
+        if keys.length == 1
+          previous.with_focus_key(keys[0].to_s)
+        else
+          previous.with_focus_key(false)
+        end
+      end
+
       must_be(Enumerable) & cast { |input|
         result =
           keys.map do |key|
@@ -200,7 +227,7 @@ module Datacaster
           end
         result = keys.length == 1 ? result.first : result
         Datacaster::ValidResult(result)
-      }
+      }.json_schema(&json_schema).json_schema_attributes(picked: keys)
     end
 
     def relate(left, op, right, error_key: nil)
@@ -277,7 +304,8 @@ module Datacaster
     end
 
     def transform_to_value(value)
-      transform { Datacaster::Utils.deep_freeze(value) }
+      value = Datacaster::Utils.deep_freeze(value)
+      transform { value }
     end
 
     def with(keys, caster)
@@ -299,7 +327,9 @@ module Datacaster
     def numeric(error_key = nil)
       error_keys = ['.numeric', 'datacaster.errors.numeric']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Numeric) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Numeric) }.
+        i18n_key(*error_keys).
+        json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
     end
 
     def decimal(digits = 8, error_key = nil)
@@ -311,32 +341,39 @@ module Datacaster
         Float(x)
 
         BigDecimal(x, digits)
-      end.i18n_key(*error_keys)
+      end.i18n_key(*error_keys).json_schema(type: 'string')
     end
 
     def array(error_key = nil)
       error_keys = ['.array', 'datacaster.errors.array']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Array) }.i18n_key(*error_keys)
+
+      check { |x| x.is_a?(Array) }.
+        i18n_key(*error_keys).
+        json_schema(type: 'array')
     end
 
     def float(error_key = nil)
       error_keys = ['.float', 'datacaster.errors.float']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Float) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Float) }.i18n_key(*error_keys).
+        json_schema(type: 'number', format: 'float')
     end
 
     def pattern(regexp, error_key = nil)
       error_keys = ['.pattern', 'datacaster.errors.pattern']
       error_keys.unshift(error_key) if error_key
-      string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect)
+      string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect).
+        json_schema(pattern: regexp.inspect)
     end
 
     # 'hash' would be a bad method name, because it would override built in Object#hash
     def hash_value(error_key = nil)
       error_keys = ['.hash_value', 'datacaster.errors.hash_value']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Hash) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Hash) }.
+        i18n_key(*error_keys).
+        json_schema(type: 'object', additionalProperties: true)
     end
 
     def hash_with_symbolized_keys(error_key = nil)
@@ -346,19 +383,23 @@ module Datacaster
     def included_in(values, error_key: nil)
       error_keys = ['.included_in', 'datacaster.errors.included_in']
       error_keys.unshift(error_key) if error_key
-      check { |x| values.include?(x) }.i18n_key(*error_keys, reference: values.map(&:to_s).join(', '))
+      check { |x| values.include?(x) }.
+        i18n_key(*error_keys, reference: values.map(&:to_s).join(', ')).
+        json_schema(enum: values)
     end
 
     def integer(error_key = nil)
       error_keys = ['.integer', 'datacaster.errors.integer']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Integer) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Integer) }.i18n_key(*error_keys).
+        json_schema(type: 'integer')
     end
 
     def integer32(error_key = nil)
       error_keys = ['.integer32', 'datacaster.errors.integer32']
       error_keys.unshift(error_key) if error_key
-      integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys)
+      integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys).
+        json_schema(format: 'int32')
     end
 
     def maximum(max, error_key = nil, inclusive: true)
@@ -400,7 +441,8 @@ module Datacaster
     def string(error_key = nil)
       error_keys = ['.string', 'datacaster.errors.string']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(String) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(String) }.i18n_key(*error_keys).
+        json_schema(type: 'string')
     end
 
     def non_empty_string(error_key = nil)
@@ -412,7 +454,7 @@ module Datacaster
     def uuid(error_key = nil)
       error_keys = ['.uuid', 'datacaster.errors.uuid']
       error_keys.unshift(error_key) if error_key
-      string(error_key) & pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/).i18n_key(*error_keys)
+      pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, error_key).i18n_key(*error_keys)
     end
 
     # Form request types
@@ -423,7 +465,8 @@ module Datacaster
 
       string(error_key) &
         try(catched_exception: [ArgumentError, TypeError]) { |x| DateTime.iso8601(x) }.
-          i18n_key(*error_keys)
+          i18n_key(*error_keys).
+          json_schema(type: 'string', format: 'date-time')
     end
 
     def to_boolean(error_key = nil)
@@ -438,7 +481,23 @@ module Datacaster
         else
           Datacaster.ErrorResult(I18nValues::Key.new(error_keys, value: x))
         end
-      end
+      end.json_schema(oneOf: [
+        { 'type' => 'string', 'enum' => ['true', 'false', '1', '0'] },
+        { 'type' => 'boolean' },
+      ])
+    end
+
+    def boolean(error_key = nil)
+      error_keys = ['.boolean', 'datacaster.errors.boolean']
+      error_keys.unshift(error_key) if error_key
+
+      cast do |x|
+        if [false, true].include?(x)
+          Datacaster.ValidResult(x)
+        else
+          Datacaster.ErrorResult(I18nValues::Key.new(error_keys, value: x))
+        end
+      end.json_schema(type:'boolean')
     end
 
     def to_float(error_key = nil)
@@ -447,7 +506,7 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         Float(x)
-      end.i18n_key(*error_keys)
+      end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float')
     end
 
     def to_integer(error_key = nil)
@@ -456,7 +515,7 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         Integer(x)
-      end.i18n_key(*error_keys)
+      end.i18n_key(*error_keys).json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
     end
 
     def optional_param(base)

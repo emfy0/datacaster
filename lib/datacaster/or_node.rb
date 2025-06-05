@@ -13,6 +13,20 @@ module Datacaster
       @right.with_runtime(runtime).(object)
     end
 
+    def to_json_schema
+      JsonSchemaResult.new({
+        "anyOf" => [@left, @right].map(&:to_json_schema)
+      })
+    end
+
+    def to_json_schema_attributes
+      super.merge(
+        required:
+          @left.to_json_schema_attributes[:required] &&
+            @right.to_json_schema_attributes[:required]
+      )
+    end
+
     def inspect
       "#<Datacaster::OrNode L: #{@left.inspect} R: #{@right.inspect}>"
     end

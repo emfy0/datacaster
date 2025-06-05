@@ -72,6 +72,28 @@ module Datacaster
       end
     end
 
+    def to_json_schema
+      result = @fields.values.reduce(JsonSchemaResult.new) do |result, caster|
+        result.apply(caster.to_json_schema)
+      end
+
+      result.without_focus
+    end
+
+    def to_json_schema_attributes
+      super.merge(
+        remaped: @fields.flat_map do |key, caster|
+          picked = caster.to_json_schema_attributes[:picked]
+
+          if picked.any?
+            picked.map { |picked| { picked.to_s => key.to_s } }
+          else
+            { nil => key.to_s }
+          end
+        end.reduce(&:merge)
+      )
+    end
+
     def inspect
       field_descriptions =
         @fields.map do |k, v|

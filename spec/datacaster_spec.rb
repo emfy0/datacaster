@@ -142,7 +142,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on integers" do
-      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not UUID"])
     end
 
     it "returns Failure on non-UUID strings" do
@@ -924,6 +924,15 @@ RSpec.describe Datacaster do
       # empty arrays could be checked with "compare([])" if needed
       expect(subject.([]).to_dry_result).to eq Failure(["should not be empty"])
     end
+
+    context 'when schema allows empty' do
+      subject { described_class.schema { array_schema(integer, allow_empty: true) } }
+
+      it "allows empty array" do
+        # empty arrays could be checked with "compare([])" if needed
+        expect(subject.([]).to_dry_result).to eq Success([])
+      end
+    end
   end
 
   describe "recursive schemas" do
@@ -1079,7 +1088,7 @@ RSpec.describe Datacaster do
 
     context "processes hash inside of array" do
       it "checks for keys and removes unchecked keys" do
-        schema = described_class.schema { array_schema(title: string) }
+        schema = described_class.schema { array_schema({title: string}) }
 
         params = [
           {title: "Person1"}, {title: "Person2", comment: "trader"}
@@ -1104,7 +1113,7 @@ RSpec.describe Datacaster do
 
       it "allows multi-pass checks" do
         schema = described_class.schema do
-          array_schema(title: string) & array_schema(name: string)
+          array_schema({title: string}) & array_schema({name: string})
         end
 
         params = [{title: "Person 1", name: "John"}, {title: "Person 2", name: "James", occupation: "Trader"}]
@@ -1116,7 +1125,7 @@ RSpec.describe Datacaster do
         #
 
         schema = described_class.schema do
-          array_schema(title: string) & array_schema(occupation: string)
+          array_schema({title: string}) & array_schema({occupation: string})
         end
 
         params = [{name: "John"}, {title: "Person 2", name: "James"}]
@@ -1136,7 +1145,7 @@ RSpec.describe Datacaster do
         #
 
         schema = described_class.schema do
-          array_schema(title: string) * array_schema(occupation: string)
+          array_schema({title: string}) * array_schema({occupation: string})
         end
 
         params = [{name: "James"}, {name: "John", title: "Person 2"}]
@@ -1148,7 +1157,7 @@ RSpec.describe Datacaster do
       end
 
       it "yields separate error for array item with extra and absent fields" do
-        schema = described_class.schema { array_schema(title: string) }
+        schema = described_class.schema { array_schema({title: string}) }
 
         expect(schema.([{title: "test"}]).to_dry_result).to eq Success([{title: "test"}])
 

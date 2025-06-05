@@ -27,6 +27,7 @@ en:
       relate: "%{left} should be %{op} %{right}"
       responds_to: "does not respond to %{reference}"
       string: is not a string
+      boolean: is not a boolean
       to_boolean: does not look like a boolean
       to_float: does not look like a float
       to_integer: does not look like an integer

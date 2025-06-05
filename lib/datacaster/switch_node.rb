@@ -27,10 +27,12 @@ module Datacaster
           caster_or_value
         when String, Symbol
           if strict
-            Datacaster::Predefined.compare(caster_or_value)
+            Datacaster::Predefined.compare(caster_or_value).json_schema { {"type" => "string", "enum" => [caster_or_value.to_s]} }
           else
-            Datacaster::Predefined.compare(caster_or_value.to_s) |
-              Datacaster::Predefined.compare(caster_or_value.to_sym)
+            (
+              Datacaster::Predefined.compare(caster_or_value.to_s) |
+                Datacaster::Predefined.compare(caster_or_value.to_sym)
+            ).json_schema { {"type" => "string", "enum" => [caster_or_value.to_s]} }
           end
         else
           Datacaster::Predefined.compare(caster_or_value)
@@ -43,6 +45,7 @@ module Datacaster
 
     def else(else_caster)
       raise ArgumentError, "Datacaster: double else clause is not permitted", caller if @else
+      else_caster = DefinitionDSL.expand(else_caster)
       self.class.new(@base, on_casters: @ons, else_caster: else_caster, pick_key: @pick_key)
     end
 
@@ -72,6 +75,34 @@ module Datacaster
 
       Datacaster.ErrorResult(
         I18nValues::Key.new(['.switch', 'datacaster.errors.switch'], value: object)
+      )
+    end
+
+    def to_json_schema
+      if @ons.empty?
+        raise RuntimeError, "switch caster requires at least one 'on' statement: switch(...).on(condition, cast)", caller
+      end
+
+      base = @base.to_json_schema
+
+      schema_result = @ons.map { |on|
+        base.apply(on[0].to_json_schema).without_focus.apply(on[1].to_json_schema)
+      }
+
+      if @else
+        schema_result << @else.to_json_schema
+      end
+
+      JsonSchemaResult.new( "oneOf" => schema_result )
+    end
+
+    def to_json_schema_attributes
+      super.merge(
+        extendable: true,
+        remaped:
+          [@base, @else, *@ons.map(&:last)].compact.reduce({}) do |result, caster|
+            result.merge(caster.to_json_schema_attributes[:remaped])
+          end
       )
     end
 
