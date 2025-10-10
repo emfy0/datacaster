@@ -332,7 +332,7 @@ Notice that OR operator, if left-hand validation fails, passes the original valu
 
 #### *IF... THEN... ELSE operator*
 
-Let's support we want to run different validations depending on some value, e.g.:
+Let's suppose we want to run different validations depending on some value, e.g.:
 
 * if 'salary' is more than 100_000, check for the additional key, 'passport'
 * otherwise, ensure 'passport' key is absent
@@ -373,7 +373,7 @@ Formally, with `a.then(b).else(c)`:
 
 Note: this construct is *not* an equivalent of `a & b | c`.
 
-With `a.then(b).else(c)` if `a` and `b` fails, then `b`'s error is returned. With `a & b | c`, instead, `c`'s result would be returned.
+With `a.then(b).else(c)` if `a` passes and `b` fails, then `b`'s error is returned. With `a & b | c`, instead, `c`'s result would be returned.
 
 #### *SWITCH... ON... ELSE operator*
 
