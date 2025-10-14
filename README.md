@@ -1371,11 +1371,11 @@ Had we used `schema` everywhere, `CommonFieldsValidator` would return failure fo
 
 As a rule of thumb, use `partial_schema` in any "intermediary" validators (extracted for the sake of clarity of code and reusability) and use `schema` in any "end" validators (ones which receive full record as input and use intermediary validators behind the scenes).
 
-Lastly, if you want to just delete extra unvalidated keys without returning a error, use `choosy_schema`.
+Lastly, if you want to just delete extra unvalidated keys without returning an error, use `choosy_schema`.
 
 #### AND with error aggregation (`*`)
 
-Often it is useful to run validator which are "further down the conveyor" (i.e. placed at the right-hand side of AND operator `&`) even if current (i.e. left-hand side) validator has failed.
+Often it is useful to run validators which are "further down the conveyor" (i.e. placed at the right-hand side of AND operator `&`) even if current (i.e. left-hand side) validator has failed.
 
 Let's say we have extracted some "common validations" and have some concrete validators, which utilize these reusable common validations (more or less repeating the motif of the previous example, shortening non-essential for this section parts for clarity):
 
@@ -1793,7 +1793,7 @@ All keyword arguments of `#i18n_key`, `#i18n_scope` and designed for that sole p
 
 It is possible to add i18n variables at the runtime (e.g. inside `check { ... }` block) by calling `i18n_vars!(variable: 'value')` or `i18n_var!(:variable, 'value')`.
 
-Outer calls of `#i18n_key` (`#i18n_scope`, `#i18n_vars`) have presedence before the inner if variable names collide. However, runtime calls of `#i18n_vars!` and `#i18n_var!` overwrite compile-time variables from the next nearest key, scope or vars on collision.
+Outer calls of `#i18n_key` (`#i18n_scope`, `#i18n_vars`) have precedence before the inner if variable names collide. However, runtime calls of `#i18n_vars!` and `#i18n_var!` overwrite compile-time variables from the next nearest key, scope or vars on collision.
 
 ## Registering custom 'predefined' types
 
