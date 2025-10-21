@@ -34,7 +34,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`maximum(max, error_key = nil, inclusive: true)`](#maximummax-error_key--nil-inclusive-true)
     - [`minimum(min, error_key = nil, inclusive: true)`](#minimummin-error_key--nil-inclusive-true)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
-    - [`non_empty_array(error_keys = {}`](#non_empty_arrayerror_keys--{})
+    - [`non_empty_array(error_keys = {}`](#non_empty_arrayerror_keys--)
     - [`pattern(regexp, error_key = nil)`](#patternregexp-error_key--nil)
     - [`uuid(error_key = nil)`](#uuiderror_key--nil)
   - [Special types](#special-types)
